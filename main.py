@@ -292,10 +292,10 @@ class GazeSwitchApp:
                              "center, left and right monitors.")
             elif not self.classifier.learned:
                 self._notify("Recalibrate to use your head and eye movement together: "
-                             "right-click the eye icon and choose Calibrate.")
+                             "right-click the GazeSwitch icon and choose Calibrate.")
             else:
                 preview = self.tray.shortcuts.get("toggle_preview")
-                self._notify("GazeSwitch is running. Right-click the eye icon near the clock "
+                self._notify("GazeSwitch is running. Right-click the icon near the clock "
                              "for options" + (f", or press {preview} for the preview." if preview
                                               else "."))
         elif self.cfg.overlay.show and not self.args.no_preview:
@@ -769,7 +769,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         os.chdir(app_env.app_dir())
         if not app_env.acquire_single_instance():
             app_env.message_box(
-                "GazeSwitch is already running. Look for the eye icon in the "
+                "GazeSwitch is already running. Look for the GazeSwitch icon in the "
                 "system tray (you may need to click the ^ arrow near the clock)."
             )
             return 0

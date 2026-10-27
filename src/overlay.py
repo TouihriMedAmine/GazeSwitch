@@ -109,11 +109,77 @@ def headline(view: PreviewView) -> Tuple[str, str]:
     return f"{view.state.value.title()} monitor", label or "No window on this monitor"
 
 
+_WINDOW_ICONS: List[int] = []
+
+
+def _hicon(image) -> int:
+    """Win32 icon handle from an RGBA image, so a window can show it."""
+    import ctypes
+    from ctypes import wintypes
+
+    image = image.convert("RGBA")
+    width, height = image.size
+
+    class BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [
+            ("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG),
+            ("biHeight", wintypes.LONG), ("biPlanes", wintypes.WORD),
+            ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+            ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+            ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+            ("biClrImportant", wintypes.DWORD),
+        ]
+
+    class ICONINFO(ctypes.Structure):
+        _fields_ = [
+            ("fIcon", wintypes.BOOL), ("xHotspot", wintypes.DWORD),
+            ("yHotspot", wintypes.DWORD), ("hbmMask", wintypes.HBITMAP),
+            ("hbmColor", wintypes.HBITMAP),
+        ]
+
+    user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+    gdi32.CreateDIBSection.argtypes = [
+        wintypes.HDC, ctypes.POINTER(BITMAPINFOHEADER), wintypes.UINT,
+        ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.DWORD,
+    ]
+    gdi32.CreateDIBSection.restype = wintypes.HBITMAP
+    gdi32.CreateBitmap.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p]
+    gdi32.CreateBitmap.restype = wintypes.HBITMAP
+    gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+    gdi32.DeleteObject.restype = wintypes.BOOL
+    user32.CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
+    user32.CreateIconIndirect.restype = wintypes.HICON
+
+    header = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), width, -height, 1, 32, 0)
+    bits = ctypes.c_void_p()
+    hdc = user32.GetDC(None)
+    color = gdi32.CreateDIBSection(hdc, ctypes.byref(header), 0, ctypes.byref(bits), None, 0)
+    user32.ReleaseDC(None, hdc)
+    if not bits:
+        return 0
+    ctypes.memmove(bits, image.tobytes("raw", "BGRA"), width * height * 4)
+    mask = gdi32.CreateBitmap(width, height, 1, 1, None)
+    icon = user32.CreateIconIndirect(ctypes.byref(ICONINFO(True, 0, 0, mask, color)))
+    gdi32.DeleteObject(color)
+    gdi32.DeleteObject(mask)
+    return int(ctypes.cast(icon, ctypes.c_void_p).value or 0)
+
+
+def _window_icons() -> List[int]:
+    if not _WINDOW_ICONS:
+        from .tray import make_icon_image
+
+        _WINDOW_ICONS.extend(_hicon(make_icon_image(size=size)) for size in (16, 32))
+    return _WINDOW_ICONS
+
+
 def style_window(title: str, topmost: bool = False) -> None:
-    """Dark title bar (Windows 10 2004+ / 11) and optional always-on-top."""
+    """Dark title bar (Windows 10 2004+ / 11), the app icon in the top-left,
+    and optional always-on-top."""
     if sys.platform != "win32":
         return
     import ctypes
+    from ctypes import wintypes
 
     user32 = ctypes.windll.user32
     hwnd = user32.FindWindowW(None, title)
@@ -123,6 +189,11 @@ def style_window(title: str, topmost: bool = False) -> None:
     ctypes.windll.dwmapi.DwmSetWindowAttribute(
         hwnd, 20, ctypes.byref(value), ctypes.sizeof(value)  # DWMWA_USE_IMMERSIVE_DARK_MODE
     )
+    user32.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.SendMessageW.restype = wintypes.LPARAM
+    for kind, handle in enumerate(_window_icons()):  # 0 = title bar, 1 = Alt-Tab
+        if handle:
+            user32.SendMessageW(hwnd, 0x0080, kind, handle)  # WM_SETICON
     if topmost:
         HWND_TOPMOST = ctypes.c_void_p(-1)
         SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0010

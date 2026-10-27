@@ -7,8 +7,8 @@ effects stay on the main thread. The main loop pushes a small state snapshot
 back with :meth:`TrayController.update_state`, which refreshes the icon
 colour, tooltip and menu checkmarks only when something changed.
 
-Icon colours: green = switching ON, blue = watching only, orange = needs
-calibration.
+The tray shows assets/icon.png. State (switching on, watching only, needs
+calibration) is in the tooltip and the menu, not in the icon colour.
 """
 from __future__ import annotations
 
@@ -28,23 +28,19 @@ COLOR_OBSERVING = (52, 152, 219)
 COLOR_UNCALIBRATED = (243, 156, 18)
 
 
-def make_icon_image(color, size: int = 64):
-    """Eye glyph: white almond with a coloured iris."""
-    from PIL import Image, ImageDraw
+_ICON_MASTER = None
 
-    scale = 4  # draw large, downsample for smooth edges
-    s = size * scale
-    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    pad = s * 0.06
-    d.ellipse([pad, s * 0.22, s - pad, s * 0.78], fill=(255, 255, 255, 255),
-              outline=(40, 40, 40, 255), width=int(s * 0.05))
-    r = s * 0.2
-    c = s / 2
-    d.ellipse([c - r, c - r, c + r, c + r], fill=tuple(color) + (255,))
-    pr = s * 0.08
-    d.ellipse([c - pr, c - pr, c + pr, c + pr], fill=(20, 20, 20, 255))
-    return img.resize((size, size), Image.LANCZOS)
+
+def make_icon_image(color=None, size: int = 64):  # noqa: ARG001 - kept for callers
+    """App icon from assets/icon.png, resized for the tray or the exe."""
+    global _ICON_MASTER
+    from PIL import Image
+
+    if _ICON_MASTER is None:
+        _ICON_MASTER = Image.open(app_env.resolve_resource("assets/icon.png")).convert("RGBA")
+    if _ICON_MASTER.size == (size, size):
+        return _ICON_MASTER.copy()
+    return _ICON_MASTER.resize((size, size), Image.LANCZOS)
 
 
 @dataclass(frozen=True)

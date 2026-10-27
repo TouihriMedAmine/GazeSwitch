@@ -14,18 +14,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.tray import COLOR_ARMED, make_icon_image  # noqa: E402
-
 APP = "GazeSwitch"
 DIST = ROOT / "dist"
 ICON = ROOT / "build" / "gazeswitch.ico"
+ICON_PNG = ROOT / "assets" / "icon.png"
 MODEL = ROOT / "models" / "face_landmarker.task"
 USER_FILES = ("config.yaml", "baselines", "logs")
 
 
 def build_icon() -> None:
+    from PIL import Image
+
     ICON.parent.mkdir(parents=True, exist_ok=True)
-    make_icon_image(COLOR_ARMED, 256).save(
+    Image.open(ICON_PNG).save(
         ICON, sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
     )
 
@@ -66,6 +67,7 @@ def main() -> int:
         "--exclude-module", "tkinter",
         "--exclude-module", "pytest",
         "--add-data", f"{MODEL}{sep}models",
+        "--add-data", f"{ICON_PNG}{sep}assets",
         "--add-data", f"{ROOT / 'config.yaml'}{sep}.",
     ])
 

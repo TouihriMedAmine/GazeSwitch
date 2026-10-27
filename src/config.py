@@ -92,7 +92,7 @@ class TargetingConfig:
     enabled: bool = False  # master gate; --enable-targeting also required
     typing_quiet_ms: int = 700
     target_dwell_ms: int = 800
-    focus_backoff_s: float = 2.0
+    focus_backoff_s: float = 1.3
     arm_on_start: bool = False
 
 

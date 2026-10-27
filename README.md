@@ -35,7 +35,7 @@ Output: `dist\GazeSwitch\` (run `GazeSwitch.exe`) and
 `dist\GazeSwitch-portable.zip` (copy/unzip anywhere). From source, the same
 app runs with `pythonw main.py --tray`.
 
-**Using it:** an eye icon appears in the system tray (click the `^` arrow
+**Using it:** the GazeSwitch icon appears in the system tray (click the `^` arrow
 near the clock if hidden; drag it onto the taskbar to keep it visible).
 
 | Icon colour | Meaning |

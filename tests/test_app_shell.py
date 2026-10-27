@@ -48,6 +48,16 @@ def test_frame_window_still_default():
     assert len(sm.window) == 5
 
 
+def test_app_icon_is_the_artwork():
+    from src.tray import make_icon_image
+
+    icon = make_icon_image(size=64)
+    assert icon.size == (64, 64) and icon.mode == "RGBA"
+    # The cyan gaze mark from the three-panel artwork is in the icon.
+    pixels = zip(*[iter(icon.get_flattened_data())] * 4)
+    assert any(r < 80 and g > 180 and b > 220 for r, g, b, _ in pixels)
+
+
 def test_tray_colors_follow_state():
     assert TrayController._color(TrayState(calibrated=False, armed=True)) == COLOR_UNCALIBRATED
     assert TrayController._color(TrayState(calibrated=True, armed=True)) == COLOR_ARMED
