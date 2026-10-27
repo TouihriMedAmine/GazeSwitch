@@ -324,8 +324,8 @@ claim calibrated physical angles from an ordinary webcam.
 ## 11. Known limitations & safety
 
 - **Accuracy is heuristic.** Monitor-level selection from a webcam is
-  realistic; pixel-precise gaze is not. No accuracy claims are made until
-  you validate on your own sessions.
+  realistic; pixel-precise gaze is not. Measure it on your own setup with
+  `scripts\evaluate_gaze.py` (§13).
 - **The learned model is linear.** It handles monitors at uneven angles
   (each side has its own anchor) and head/eye trade-off, but not large
   posture changes since calibration — recalibrate after moving your seat.
@@ -362,3 +362,29 @@ selected monitor:
 
 The classifier/selection/action interfaces (states, events, callbacks) do
 not need to change to add this.
+
+## 13. Measuring accuracy and latency
+
+```powershell
+python scripts\evaluate_gaze.py                 # 10 looks per monitor, ~1.5 min
+python scripts\evaluate_gaze.py --per-monitor 15
+python scripts\evaluate_gaze.py --log-only      # focus latency from the app log only
+```
+
+Quit GazeSwitch first (it holds the camera) and calibrate beforehand. A
+"Look here" window jumps between your monitors in random order (never the
+same monitor twice in a row). The script runs the app's own pipeline and
+records, per cue, the monitor selected after 2.5 s and the time until the
+right monitor was selected. That time includes your own eye and head
+reaction (typically 0.2–0.3 s). Focus latency, from a selection to the
+window being focused, is read from `logs\gazeswitch.log` of normal use; its
+tail includes deliberate delays such as the typing guard
+(`targeting.typing_quiet_ms`).
+
+It prints a confusion table and a metrics table in Markdown and saves
+`logs\eval-*.json`. Results hold for one user, one desk and one camera.
+
+## License
+
+MIT, see [LICENSE](LICENSE). The MediaPipe face model is not included; it
+is downloaded from Google under its own license (Apache 2.0).
