@@ -384,6 +384,27 @@ tail includes deliberate delays such as the typing guard
 It prints a confusion table and a metrics table in Markdown and saves
 `logs\eval-*.json`. Results hold for one user, one desk and one camera.
 
+**Reference run** (27 October 2026; one user, three 1080p monitors, Iriun
+webcam at ~38 fps; head/eye calibration done 2 minutes earlier):
+
+| Looked at \ Detected | Left | Center | Right | Unknown |
+|---|---:|---:|---:|---:|
+| Left | 10 | 0 | 0 | 0 |
+| Center | 0 | 10 | 0 | 0 |
+| Right | 0 | 0 | 10 | 0 |
+
+| Metric | Result |
+|---|---:|
+| Monitor accuracy | 30 / 30 |
+| Cue → monitor selected (median, p90) | 1.51 s, 1.75 s |
+| Selection → window focused (median, p90; 305 switches in daily use) | 208 ms, 1097 ms |
+
+Limits: 30 cues is a small sample; cues sat in the middle of each monitor
+and the test ran right after calibration, so edges of the screens and
+posture drift over a day are not covered. The cue-to-selection time
+includes the user's reaction and head movement plus the vote window and
+dwell; the focus tail includes the typing guard.
+
 ## License
 
 MIT, see [LICENSE](LICENSE). The MediaPipe face model is not included; it
