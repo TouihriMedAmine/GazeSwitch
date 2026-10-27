@@ -1,0 +1,25 @@
+# GazeSwitch requirements (Windows, Python 3.12)
+#
+# Direct dependencies, pinned to the versions verified together in .venv
+# (69/69 tests passing). For a byte-for-byte reproduction including all
+# transitive packages, use requirements-lock.txt instead.
+#
+# mediapipe declares opencv-contrib-python as its dependency, so only the
+# contrib build of OpenCV is installed. Do not also install plain
+# opencv-python: two cv2 copies conflict.
+
+mediapipe==1.1.1
+opencv-contrib-python==5.0.0.93
+numpy==2.5.4
+PyYAML==6.0.3
+
+# Desktop tray app
+pystray==0.19.5
+Pillow==13.0.0
+cv2_enumerate_cameras==1.4.0   # camera names for the Camera menu
+
+# Build the portable GazeSwitch.exe (scripts/build_app.py)
+pyinstaller==6.22.3
+
+# Dev / tests
+pytest==9.1.1

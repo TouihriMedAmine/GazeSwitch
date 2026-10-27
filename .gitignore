@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Tests / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# PyInstaller build output (python scripts/build_app.py)
+build/
+dist/
+*.spec
+
+# Per-user runtime data
+logs/
+baselines/
+*.log
+
+# Face model, fetched by scripts/download_model.py
+models/*.task
+
+# Editors / OS
+.vscode/
+.idea/
+.cursor/
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store

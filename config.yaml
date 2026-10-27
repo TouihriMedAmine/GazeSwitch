@@ -1,0 +1,145 @@
+# GazeSwitch configuration
+# Every value here has a built-in default; delete lines to fall back to it.
+# Paths are relative to the project root.
+
+camera:
+  # Camera index (see `python main.py --list-cameras`).
+  # Camo usually appears as a DirectShow device; on laptops index 0 is often
+  # the built-in webcam and index 1 is Camo. null = auto-scan 0..5.
+  index: null
+  # Camera by device name (pick it from the tray menu: Camera). Wins over
+  # index; null = first working camera. See `python main.py --list-cameras`.
+  name: null
+  # Requested capture size. Detection runs at process_width anyway, so small
+  # is cheaper - but Camo ignores this and always sends its own resolution.
+  width: 640
+  height: 480
+  fps: 30
+  # Mirror the frame (selfie view). The gaze convention assumes the mirrored
+  # frame; leave true unless you know what you are changing.
+  mirror: true
+  # Downscale width used for face detection (CPU vs speed). 480-640 is sane.
+  process_width: 640
+  # auto = Media Foundation first, then DirectShow. Camo at 4K: MSMF ~29 fps,
+  # DirectShow ~9 fps on this machine. Force one with msmf / dshow.
+  backend: auto
+  max_read_failures: 30
+  reopen_delay_s: 2.0
+
+tracking:
+  model_path: models/face_landmarker.task
+  min_detection_confidence: 0.5
+  min_presence_confidence: 0.5
+  min_tracking_confidence: 0.5
+  # geometric = landmark ratios (default, convention-safe)
+  # matrix   = Euler angles from the facial transformation matrix (also
+  #            approximate; check sign with the on-screen yaw bar)
+  head_pose_method: geometric
+  blink_threshold: 0.5
+  invert_yaw: false
+  invert_pitch: false
+  # Expression model, only used for blink scores. Off = faster; blinks are
+  # then estimated from eye shape.
+  blendshapes: false
+
+calibration:
+  # Calibration visits your center, left and right monitor in turn. For each
+  # one you get settle_s to move your eyes there, then a beep, then up to
+  # duration_s of collection while you move your head around (the ring
+  # fills like Face ID; a full ring ends the step early). That teaches
+  # GazeSwitch how much your eyes make up for your head rotation.
+  duration_s: 8.0
+  settle_s: 3.0
+  min_samples: 40         # per monitor
+  # If min_samples isn't reached after duration_s (low-FPS camera), keep
+  # collecting up to this many seconds before giving up.
+  max_duration_s: 14.0
+  sounds: true            # beep at each step (you may not see the preview)
+  # Noise (std of the combined x signal) above which the baseline is flagged
+  # as noisy in the UI. Purely advisory.
+  max_noise_x: 0.12
+  save_path: baselines/center_baseline.json
+  auto_load: true
+
+classifier:
+  # Sign flip for the combined x signal. If LEFT/RIGHT come out swapped on
+  # your setup, set this to true (see README troubleshooting).
+  invert_x: false
+  # Combined signal = (weight_head * yaw/yaw_scale + weight_iris * iris/iris_scale)
+  weight_head: 0.65
+  weight_iris: 0.35
+  yaw_scale: 0.45
+  iris_scale: 0.18
+  # |x| <= center_threshold        -> CENTER
+  # |x| >= side_threshold          -> LEFT / RIGHT
+  # in between                     -> UNKNOWN (hysteresis band)
+  center_threshold: 0.12
+  side_threshold: 0.32
+  # Derive thresholds from calibration noise instead of the fixed values
+  # above (center = 3*sigma_x, side = 7*sigma_x, with floors).
+  auto_thresholds_from_noise: false
+  # After a three-monitor calibration the weights above and the thresholds
+  # are replaced by the learned model: x is -1 / 0 / +1 at your left /
+  # center / right monitor, boundaries sit at +-0.5, and this is the
+  # undecided band either side of each boundary.
+  monitor_band: 0.1
+
+selection:
+  window_frames: 7        # vote window (frames), used when vote_window_ms is 0
+  vote_window_ms: 250     # vote over the last N ms of frames (FPS-independent)
+  min_confidence: 0.6     # fraction of window votes needed for a candidate
+  dwell_ms: 200           # new state must persist this long before switching
+  lost_ms: 600            # tracking lost this long -> UNKNOWN
+
+windows:
+  refresh_s: 2.0
+  # Process names (base filenames) to ignore entirely, e.g. Camo's window.
+  excluded_processes: [camo.exe, camo studio]
+  # Optional per-monitor preference lists. A matching window always wins over
+  # the default, which is the front-most window on that monitor (the one you
+  # used last there). Multiple entries: first match wins.
+  # Example:
+  # preferences:
+  #   LEFT:
+  #     - process: chrome.exe
+  #     - title_contains: Gmail
+  preferences:
+    LEFT: []
+    CENTER: []
+    RIGHT: []
+
+targeting:
+  # MASTER GATE for Phase 2 focus targeting. false = the app can never change
+  # focus, even with --enable-targeting. Leave false until observe-only mode
+  # behaves reliably in your daily work.
+  enabled: true
+  typing_quiet_ms: 500    # no focus steal if any input happened this recently
+  target_dwell_ms: 150    # candidate window must stay the same this long
+  arm_on_start: true      # tray app: switching starts ON (still needs enabled: true)
+  focus_backoff_s: 2.0    # cooldown after a failed focus request
+
+hotkeys:
+  # Global shortcuts, active in every app. Use ctrl / alt / shift / win plus
+  # a letter, digit or F1-F24. Set one to "" to turn it off.
+  toggle_targeting: ctrl+alt+g    # switching on / off
+  emergency_disable: ctrl+alt+k   # switching off, always
+  toggle_preview: ctrl+alt+p      # show / hide the camera preview
+  toggle_silent: ctrl+alt+s       # silent mode: no notifications or beeps
+  calibrate: ctrl+alt+c
+  next_camera: ctrl+alt+n
+  quit: ctrl+alt+q                # exit GazeSwitch
+
+overlay:
+  show: true
+  width: 720
+  position: [40, 40]
+  # Keep the preview above other windows, so focusing the app on its
+  # monitor doesn't bury it. It hides only with Q (or its close button).
+  always_on_top: true
+  # Silent mode: no tray notifications and no calibration beeps. Toggled by
+  # hotkeys.toggle_silent or the tray menu; the choice is saved here.
+  silent: false
+
+logging:
+  level: INFO
+  file: logs/gazeswitch.log
